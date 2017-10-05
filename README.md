@@ -41,8 +41,8 @@ Ansible 2.2+
   tasks:
     - name: Create statuscake test
       statuscake: 
-        username: "username"
-        api_key: "api_key"
+        username: username
+        api_key: api_key
         state: present
         name: google
         url: www.google.com
@@ -52,7 +52,7 @@ Ansible 2.2+
         check_rate: 300
         status_codes: '204,205,206,303,400,401,404,405,406,408,410,444,429,494,495,496,499,500,501,502,504,505,506,507,511,598,599'
         timeout: 500
-        test_tags: "GoogleWeb"
+        test_tags: GoogleWeb
         user_agent: "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
 ```
 
