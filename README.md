@@ -30,6 +30,7 @@ Ansible 2.1+
 | timeout              | false    | Timeout in seconds                                                                            | 30             |
 | status_codes         | false    | Comma seperated list of StatusCodes to trigger error on                                       | Stantard codes |
 | host                 | false    | Website Host                                                                                  |                |
+| custom_header        | false    | Custom HTTP header supplied as JSON format                                                    |                |
 
 ### Example usage:
 
