@@ -31,6 +31,8 @@ Ansible 2.1+
 | status_codes         | false    | Comma seperated list of StatusCodes to trigger error on                                       | Stantard codes |
 | host                 | false    | Website Host                                                                                  |                |
 | custom_header        | false    | Custom HTTP header supplied as JSON format                                                    |                |
+| enable_ssl           | false    | Enable (1) / disable (0) checking ssl certificate                                             | 1 (enabled)    |
+| follow_redirect      | false    | Enable (1) / disable (0) follow redirect                                                      | 0 (disabled)   |
 
 ### Example usage:
 
@@ -56,6 +58,8 @@ Ansible 2.1+
         timeout: 500
         test_tags: GoogleWeb
         user_agent: "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
+        follow_redirect: 0
+        enable_ssl: 0
 ```
 
 ``` bash
