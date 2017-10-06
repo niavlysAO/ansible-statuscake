@@ -4,7 +4,7 @@ Ansible module for manage statuscake tests on StatusCake API.
 
 ## Requirements
 
-Ansible 2.2+
+Ansible 2.1+
 
 ## Documentation
 
@@ -29,6 +29,7 @@ Ansible 2.2+
 | confirmation         | false    | Alert delay rate                                                                              | 300            |
 | timeout              | false    | Timeout in seconds                                                                            | 30             |
 | status_codes         | false    | Comma seperated list of StatusCodes to trigger error on                                       | Stantard codes |
+| host                 | false    | Website Host                                                                                  |                |
 
 ### Example usage:
 
