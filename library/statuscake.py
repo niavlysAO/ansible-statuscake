@@ -6,7 +6,7 @@ class StatusCake:
     URL_ALL_TESTS = "https://app.statuscake.com/API/Tests"
     URL_DETAILS_TEST = "https://app.statuscake.com/API/Tests/Details"
 
-    def __init__(self, module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, user_agent, paused, node_locations, confirmation, timeout, status_codes, host, custom_header):
+    def __init__(self, module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, user_agent, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl):
         self.headers = {"Username": username, "API": api_key}
         self.module = module
         self.name = name
@@ -23,6 +23,8 @@ class StatusCake:
         self.status_codes = status_codes
         self.host = host
         self.custom_header = custom_header
+        self.follow_redirect = follow_redirect
+        self.enable_ssl = enable_ssl
 
         if not check_rate:
             self.check_rate = 300
@@ -73,6 +75,8 @@ class StatusCake:
                 "StatusCodes": self.status_codes,
                 "WebsiteHost": self.host,
                 "CustomHeader": self.custom_header.replace("'", "\""),
+                "FollowRedirect": self.follow_redirect,
+                "EnableSSLWarning": self.enable_ssl,
                 }
 
         test_id = self.check_test()
@@ -105,6 +109,8 @@ def run_module():
         status_codes=dict(type='str', required=False),
         host=dict(type='str', required=False),
         custom_header=dict(type='str', required=False),
+        follow_redirect=dict(type='int', required=False),
+        enable_ssl=dict(type='int', required=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
@@ -126,8 +132,10 @@ def run_module():
     status_codes = module.params['status_codes']
     host = module.params['host']
     custom_header = module.params['custom_header']
+    follow_redirect = module.params['follow_redirect']
+    enable_ssl = module.params['enable_ssl']
 
-    test = StatusCake(module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, user_agent, paused, node_locations, confirmation, timeout, status_codes, host, custom_header)
+    test = StatusCake(module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, user_agent, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl)
 
     if state == "absent":
         test.delete_test()
