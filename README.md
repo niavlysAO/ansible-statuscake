@@ -33,6 +33,8 @@ Ansible 2.1+
 | custom_header        | false    | Custom HTTP header supplied as JSON format                                                    |                |
 | enable_ssl           | false    | Enable (1) / disable (0) checking ssl certificate                                             | 1 (enabled)    |
 | follow_redirect      | false    | Enable (1) / disable (0) follow redirect                                                      | 0 (disabled)   |
+| find_string          | false    | A string that should either be found or not found.                                            |                |
+| do_not_find          | false    | If the above string should be found to trigger a alert. 1 = will trigger                      | 0 (find = up)  |
 
 ### Example usage:
 
