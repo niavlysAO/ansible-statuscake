@@ -116,7 +116,7 @@ def run_module():
         follow_redirect=dict(type='int', required=False),
         enable_ssl=dict(type='int', required=False),
         find_string=dict(type='str', required=False),
-        do_not_find=dict(type='str', required=False),
+        do_not_find=dict(type='int', required=False),
     )
 
     module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
