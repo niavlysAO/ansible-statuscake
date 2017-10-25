@@ -1,5 +1,5 @@
-import requests
 from ansible.module_utils.basic import *
+from ansible.module_utils.urls import *
 
 class StatusCake:
     URL_UPDATE_TEST = "https://app.statuscake.com/API/Tests/Update"
@@ -45,8 +45,8 @@ class StatusCake:
             self.module.exit_json(changed=True, meta= response['Message'])
             
     def check_test(self):
-        response = requests.put(self.URL_ALL_TESTS, headers=self.headers)
-        json_resp = response.json()
+        response = open_url(self.URL_ALL_TESTS, headers=self.headers, method="PUT")
+        json_resp = json.loads(response.read())
 
         for item in json_resp:
             if item['WebsiteName'] == self.name:
@@ -59,8 +59,9 @@ class StatusCake:
             self.module.exit_json(changed=False, msg="This test doens't exists")
         else:
             data = {'TestID': test_id}
-            response = requests.delete(self.URL_DETAILS_TEST, headers=self.headers,data=data)
-            self.check_response(response.json())
+            response = open_url(self.URL_DETAILS_TESTS, headers=self.headers, data=self.data, method="DELETE")
+            json_resp = json.loads(response.read())
+            self.check_response(json_resp)
                     
     def create_test(self):
         data = {"WebsiteName": self.name,
@@ -86,11 +87,13 @@ class StatusCake:
         test_id = self.check_test()
         
         if not test_id:
-            response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=data)    
-            self.check_response(response.json())
+            response = open_url(self.URL_UPDATE_TEST, headers=self.headers, data=data, method="PUT")
+            json_resp = json.loads(response.read())
+            self.check_response(json_resp)
         else:
             data['TestID'] = test_id
-            response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=data)
+            response = open_url(self.URL_UPDATE_TEST, headers=self.headers, data=data, method="PUT")
+            json_resp = json.loads(response.read())
             self.check_response(response.json())
 
 def run_module():
