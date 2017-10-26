@@ -1,4 +1,5 @@
 import requests
+import json
 from ansible.module_utils.basic import *
 
 class StatusCake:
@@ -45,7 +46,7 @@ class StatusCake:
             self.module.exit_json(changed=True, meta= response['Message'])
             
     def check_test(self):
-        response = requests.put(self.URL_ALL_TESTS, headers=self.headers)
+        response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
         json_resp = response.json()
 
         for item in json_resp:
@@ -62,7 +63,7 @@ class StatusCake:
             response = requests.delete(self.URL_DETAILS_TEST, headers=self.headers,data=data)
             self.check_response(response.json())
                     
-    def create_test(self):
+    def create_test(self,check_mode=None):
         data = {"WebsiteName": self.name,
                 "WebsiteURL": self.url,
                 "CheckRate": self.check_rate,
@@ -76,20 +77,32 @@ class StatusCake:
                 "Timeout": self.timeout,
                 "StatusCodes": self.status_codes,
                 "WebsiteHost": self.host,
-                "CustomHeader": self.custom_header.replace("'", "\""),
                 "FollowRedirect": self.follow_redirect,
                 "EnableSSLWarning": self.enable_ssl,
                 "FindString": self.find_string,
                 "DoNotFind": self.do_not_find,
                 }
 
+        if self.custom_header:
+            data['CustomHeader'] = self.custom_header.replace("'", "\"")
+
         test_id = self.check_test()
         
         if not test_id:
+            if check_mode:
+                self.module.exit_json(changed=True, msg="Test inserted")
             response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=data)    
             self.check_response(response.json())
         else:
             data['TestID'] = test_id
+            if check_mode:
+                url_details_test = self.URL_DETAILS_TEST + "/?TestID=" + str(test_id)
+                response = requests.get(url_details_test, headers=self.headers)
+                stored_data = response.json()
+                if (compare_json(data,stored_data)):
+                    self.module.exit_json(changed=False, msg="No data has been updated (is any data different?) Given: "+str(test_id))
+                else:
+                    self.module.exit_json(changed=True, msg="Test updated")
             response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=data)
             self.check_response(response.json())
 
@@ -119,8 +132,8 @@ def run_module():
         do_not_find=dict(type='int', required=False),
     )
 
-    module = AnsibleModule(argument_spec=module_args, supports_check_mode=False)
-    
+    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+
     username = module.params['username']
     api_key = module.params['api_key']
     name = module.params['name']
@@ -145,10 +158,29 @@ def run_module():
 
     test = StatusCake(module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, user_agent, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl, find_string, do_not_find)
 
+    if module.check_mode:
+        test.create_test(check_mode=True)
+
     if state == "absent":
         test.delete_test()
     else:
         test.create_test()
+
+def compare_json(a,b):
+  a['URI'] = a.pop('WebsiteURL')
+  a['Tags'] = a.pop('TestTags')
+  del a['UserAgent']
+  for key in a.keys():
+      if type(b[key]) == unicode:
+        if a[key] and str(a[key]) != b[key].encode('UTF-8'):
+            return False
+      if type(b[key]) == int:
+        if a[key] and a[key] != b[key]:
+            return False
+      else:
+        if a[key] and a[key] != b[key]:
+            return b[key]
+  return True
 
 def main():
     run_module()
