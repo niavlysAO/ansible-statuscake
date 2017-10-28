@@ -167,19 +167,20 @@ def run_module():
         test.create_test()
 
 def compare_json(a,b):
-  a['URI'] = a.pop('WebsiteURL')
-  a['Tags'] = a.pop('TestTags')
+  b['WebsiteURL'] = b.pop('URI')
+  b['TestTags'] = b.pop('Tags')
   del a['UserAgent']
   for key in a.keys():
-      if type(b[key]) == unicode:
-        if a[key] and str(a[key]) != b[key].encode('UTF-8'):
-            return False
-      if type(b[key]) == int:
-        if a[key] and a[key] != b[key]:
-            return False
-      else:
-        if a[key] and a[key] != b[key]:
-            return b[key]
+      a[key] = True if a[key] == 1 else False
+      b[key] = b[key].encode('UTF-8') if type(b[key]) == unicode else b[key]
+      if a[key]:
+          if type(b[key]) is list:
+              b[key] = [item.encode('UTF8') for item in b[key]] 
+              b[key] = ','.join(b[key])
+              if a[key] != b[key]:
+                  return False
+          if str(a[key]) != str(b[key]):
+                return False
   return True
 
 def main():
