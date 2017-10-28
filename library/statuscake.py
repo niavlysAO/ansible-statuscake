@@ -53,13 +53,15 @@ class StatusCake:
             if item['WebsiteName'] == self.name:
                 return item['TestID']
 
-    def delete_test(self):
+    def delete_test(self,check_mode=None):
         test_id = self.check_test()
 
         if not test_id:
-            self.module.exit_json(changed=False, msg="This test doens't exists")
+            self.module.exit_json(changed=False, msg="This Check doens't exists")
         else:
             data = {'TestID': test_id}
+            if check_mode:
+                self.module.exit_json(changed=True, msg="This Check Has Been Deleted. It can not be recovered.")
             response = requests.delete(self.URL_DETAILS_TEST, headers=self.headers,data=data)
             self.check_response(response.json())
                     
@@ -98,13 +100,31 @@ class StatusCake:
             if check_mode:
                 url_details_test = self.URL_DETAILS_TEST + "/?TestID=" + str(test_id)
                 response = requests.get(url_details_test, headers=self.headers)
-                stored_data = response.json()
-                if (compare_json(data,stored_data)):
-                    self.module.exit_json(changed=False, msg="No data has been updated (is any data different?) Given: "+str(test_id))
-                else:
+                request_data = response.json()
+                if has_test_changed(data,request_data):
                     self.module.exit_json(changed=True, msg="Test updated")
+                else:
+                    self.module.exit_json(changed=False, msg="No data has been updated (is any data different?) Given: "+str(test_id))
             response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=data)
             self.check_response(response.json())
+
+# a = data returned by YAML
+# b = data returned by request
+def has_test_changed(a,b):
+  b['WebsiteURL'] = b.pop('URI')
+  b['TestTags'] = b.pop('Tags')
+  del a['UserAgent']
+  for key in a.keys():
+      a[key] = True if a[key] == 1 else False
+      b[key] = b[key].encode('UTF-8') if type(b[key]) == unicode else b[key]
+      if a[key] and type(b[key]) is list:
+          b[key] = [item.encode('UTF8') for item in b[key]]
+          b[key] = ','.join(b[key])
+          if a[key] != b[key]:
+              return True
+      if a[key] and str(a[key]) != str(b[key]):
+          return True
+  return False
 
 def run_module():
 
@@ -159,29 +179,15 @@ def run_module():
     test = StatusCake(module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, user_agent, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl, find_string, do_not_find)
 
     if module.check_mode:
-        test.create_test(check_mode=True)
+        if state == "absent":
+            test.delete_test(check_mode=True)
+        else:
+            test.create_test(check_mode=True)
 
     if state == "absent":
         test.delete_test()
     else:
         test.create_test()
-
-def compare_json(a,b):
-  b['WebsiteURL'] = b.pop('URI')
-  b['TestTags'] = b.pop('Tags')
-  del a['UserAgent']
-  for key in a.keys():
-      a[key] = True if a[key] == 1 else False
-      b[key] = b[key].encode('UTF-8') if type(b[key]) == unicode else b[key]
-      if a[key]:
-          if type(b[key]) is list:
-              b[key] = [item.encode('UTF8') for item in b[key]] 
-              b[key] = ','.join(b[key])
-              if a[key] != b[key]:
-                  return False
-          if str(a[key]) != str(b[key]):
-                return False
-  return True
 
 def main():
     run_module()
