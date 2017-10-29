@@ -7,7 +7,7 @@ class StatusCake:
     URL_ALL_TESTS = "https://app.statuscake.com/API/Tests"
     URL_DETAILS_TEST = "https://app.statuscake.com/API/Tests/Details"
 
-    def __init__(self, module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, user_agent, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl, find_string, do_not_find):
+    def __init__(self, module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl, find_string, do_not_find):
         self.headers = {"Username": username, "API": api_key}
         self.module = module
         self.name = name
@@ -16,7 +16,6 @@ class StatusCake:
         self.test_tags = test_tags
         self.test_type = test_type
         self.contact_group = contact_group
-        self.user_agent = user_agent
         self.paused = paused
         self.node_locations = node_locations
         self.confirmation = confirmation
@@ -72,7 +71,6 @@ class StatusCake:
                 "TestType": self.test_type,
                 "TestTags": self.test_tags,
                 "ContactGroup": self.contact_group,
-                "UserAgent": self.user_agent,
                 "Paused": self.paused,
                 "NodeLocations": self.node_locations,
                 "Confirmation": self.confirmation,
@@ -101,30 +99,35 @@ class StatusCake:
                 url_details_test = self.URL_DETAILS_TEST + "/?TestID=" + str(test_id)
                 response = requests.get(url_details_test, headers=self.headers)
                 request_data = response.json()
-                if has_test_changed(data,request_data):
+                if self.has_test_changed(data,request_data):
                     self.module.exit_json(changed=True, msg="Test updated")
                 else:
                     self.module.exit_json(changed=False, msg="No data has been updated (is any data different?) Given: "+str(test_id))
             response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=data)
             self.check_response(response.json())
 
-# a = data returned by YAML
-# b = data returned by request
-def has_test_changed(a,b):
-  b['WebsiteURL'] = b.pop('URI')
-  b['TestTags'] = b.pop('Tags')
-  del a['UserAgent']
-  for key in a.keys():
-      a[key] = True if a[key] == 1 else False
-      b[key] = b[key].encode('UTF-8') if type(b[key]) == unicode else b[key]
-      if a[key] and type(b[key]) is list:
-          b[key] = [item.encode('UTF8') for item in b[key]]
-          b[key] = ','.join(b[key])
-          if a[key] != b[key]:
+    def has_test_changed(self,local_data,req_data):
+        req_data = self.convert(req_data)
+        for key in local_data.keys():
+          if local_data[key] and str(local_data[key]) != str(req_data[key]):
               return True
-      if a[key] and str(a[key]) != str(b[key]):
-          return True
-  return False
+        return False
+
+    # convert data returned by request to a similar and comparable data estruture
+    def convert(self,req_data):
+        req_data['WebsiteURL'] = req_data.pop('URI')
+        req_data['TestTags'] = req_data.pop('Tags')
+        for key in req_data.keys():
+            if  type(req_data[key]) is list:
+                req_data[key] = [item.encode('UTF8') for item in req_data[key]]
+                req_data[key] = ','.join(req_data[key])
+            if  type(req_data[key]) is unicode:
+                req_data[key] = req_data[key].encode('UTF-8')
+            if req_data[key] is True:
+                req_data[key] = 1
+            if req_data[key] is False:
+                req_data[key] = 0
+        return req_data
 
 def run_module():
 
@@ -138,7 +141,6 @@ def run_module():
         check_rate=dict(type='int', required=False),
         test_type=dict(type='str', required=False),
         contact_group=dict(type='int', required=False),
-        user_agent=dict(type='str', required=False),
         paused=dict(type='int', required=False),
         node_locations=dict(type='str', required=False),
         confirmation=dict(type='int', required=False),
@@ -163,7 +165,6 @@ def run_module():
     check_rate = module.params['check_rate']
     test_type = module.params['test_type']
     contact_group = module.params['contact_group']
-    user_agent = module.params['user_agent']
     paused = module.params['paused']
     node_locations = module.params['node_locations']
     confirmation = module.params['confirmation']
@@ -176,12 +177,13 @@ def run_module():
     find_string = module.params['find_string']
     do_not_find = module.params['do_not_find']
 
-    test = StatusCake(module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, user_agent, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl, find_string, do_not_find)
+    test = StatusCake(module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl, find_string, do_not_find)
 
     if state == "absent":
         test.delete_test()
     else:
         test.create_test()
+
 
 def main():
     run_module()
