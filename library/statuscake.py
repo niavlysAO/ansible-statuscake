@@ -28,6 +28,9 @@ class StatusCake:
         self.find_string = find_string
         self.do_not_find = do_not_find
 
+        if self.custom_header:
+            data['CustomHeader'] = self.custom_header.replace("'", "\"")
+
         if not check_rate:
             self.check_rate = 300
         else:
@@ -37,6 +40,24 @@ class StatusCake:
             self.test_type = "HTTP"
         else:
             self.test_type = test_type
+
+        self.data = {"WebsiteName": self.name,
+                "WebsiteURL": self.url,
+                "CheckRate": self.check_rate,
+                "TestType": self.test_type,
+                "TestTags": self.test_tags,
+                "ContactGroup": self.contact_group,
+                "Paused": self.paused,
+                "NodeLocations": self.node_locations,
+                "Confirmation": self.confirmation,
+                "Timeout": self.timeout,
+                "StatusCodes": self.status_codes,
+                "WebsiteHost": self.host,
+                "FollowRedirect": self.follow_redirect,
+                "EnableSSLWarning": self.enable_ssl,
+                "FindString": self.find_string,
+                "DoNotFind": self.do_not_find,
+                }
 
     def check_response(self,response):
         if response['Success'] == False:
@@ -65,51 +86,31 @@ class StatusCake:
             self.check_response(response.json())
                     
     def create_test(self):
-        data = {"WebsiteName": self.name,
-                "WebsiteURL": self.url,
-                "CheckRate": self.check_rate,
-                "TestType": self.test_type,
-                "TestTags": self.test_tags,
-                "ContactGroup": self.contact_group,
-                "Paused": self.paused,
-                "NodeLocations": self.node_locations,
-                "Confirmation": self.confirmation,
-                "Timeout": self.timeout,
-                "StatusCodes": self.status_codes,
-                "WebsiteHost": self.host,
-                "FollowRedirect": self.follow_redirect,
-                "EnableSSLWarning": self.enable_ssl,
-                "FindString": self.find_string,
-                "DoNotFind": self.do_not_find,
-                }
-
-        if self.custom_header:
-            data['CustomHeader'] = self.custom_header.replace("'", "\"")
 
         test_id = self.check_test()
         
         if not test_id:
             if self.module.check_mode:
                 self.module.exit_json(changed=True, msg="Test inserted")
-            response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=data)    
+            response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)    
             self.check_response(response.json())
         else:
-            data['TestID'] = test_id
+            self.data['TestID'] = test_id
             if self.module.check_mode:
                 url_details_test = self.URL_DETAILS_TEST + "/?TestID=" + str(test_id)
                 response = requests.get(url_details_test, headers=self.headers)
                 request_data = response.json()
-                if self.has_test_changed(data,request_data):
+                if self.has_test_changed(request_data):
                     self.module.exit_json(changed=True, msg="Test updated")
                 else:
                     self.module.exit_json(changed=False, msg="No data has been updated (is any data different?) Given: "+str(test_id))
-            response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=data)
+            response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)
             self.check_response(response.json())
 
-    def has_test_changed(self,local_data,req_data):
+    def has_test_changed(self,req_data):
         req_data = self.convert(req_data)
-        for key in local_data.keys():
-          if local_data[key] and str(local_data[key]) != str(req_data[key]):
+        for key in self.data.keys():
+          if self.data[key] and str(self.data[key]) != str(req_data[key]):
               return True
         return False
 
