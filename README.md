@@ -23,7 +23,6 @@ Ansible 2.1+
 | check_rate           | false    | The number of seconds between checks                                                          | 300            |
 | test_type            | false    | Test type to use                                                                              | HTTP           |
 | contact_group        | false    | Contact group ID                                                                              |                |
-| user_agent           | false    | Custom user agent                                                                             |                |
 | paused               | false    | 0 to unpause, 1 to pause                                                                      | 0 (unpaused)   |
 | node_locations       | false    | Node locations ID seperated by a comma                                                        |                |
 | confirmation         | false    | Alert delay rate                                                                              | 300            |
@@ -59,7 +58,6 @@ Ansible 2.1+
         status_codes: '204,205,206,303,400,401,404,405,406,408,410,444,429,494,495,496,499,500,501,502,504,505,506,507,511,598,599'
         timeout: 500
         test_tags: GoogleWeb
-        user_agent: "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"
         follow_redirect: 0
         enable_ssl: 0
 ```
