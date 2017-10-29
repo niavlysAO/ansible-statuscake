@@ -59,11 +59,21 @@ class StatusCake:
                 "DoNotFind": self.do_not_find,
                 }
 
+        self.result = {
+            'changed': False,
+            'name': self.name,
+            'state': self.state,
+            'response': "",
+            'diff': {
+                'before': {},
+                'after': {}
+            }
+        }
+
     def check_response(self,response):
-        if response['Success'] == False:
-            self.module.exit_json(changed=False, meta= response['Message'])
-        else:
-            self.module.exit_json(changed=True, meta= response['Message'])
+        self.result['response'] = response['Message']
+        if response['Success']:
+            self.result['changed'] = True
             
     def check_test(self):
         response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
@@ -77,13 +87,15 @@ class StatusCake:
         test_id = self.check_test()
 
         if not test_id:
-            self.module.exit_json(changed=False, msg="This Check doens't exists")
+            self.result['response'] = "This Check doesn't exists"
         else:
             data = {'TestID': test_id}
             if self.module.check_mode:
-                self.module.exit_json(changed=True, msg="This Check Has Been Deleted. It can not be recovered.")
-            response = requests.delete(self.URL_DETAILS_TEST, headers=self.headers,data=data)
-            self.check_response(response.json())
+                self.result['changed'] = True
+                self.result['response'] = "This Check Has Been Deleted. It can not be recovered."
+            else:
+                response = requests.delete(self.URL_DETAILS_TEST, headers=self.headers,data=data)
+                self.check_response(response.json())
                     
     def create_test(self):
 
@@ -91,30 +103,31 @@ class StatusCake:
         
         if not test_id:
             if self.module.check_mode:
-                self.module.exit_json(changed=True, msg="Test inserted")
-            response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)    
-            self.check_response(response.json())
+                self.result['changed'] = True
+                self.result['response'] = "Test inserted"
+            else:
+                response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)
+                self.check_response(response.json())
+            self.result['diff']['after'] = self.data
         else:
             self.data['TestID'] = test_id
+            url_details_test = self.URL_DETAILS_TEST + "/?TestID=" + str(test_id)
+            response = requests.get(url_details_test, headers=self.headers)
+            req_data = self.convert(response.json())
+            diffkeys = [k for k in self.data if self.data[k] and str(self.data[k]) != str(req_data[k])]
             if self.module.check_mode:
-                url_details_test = self.URL_DETAILS_TEST + "/?TestID=" + str(test_id)
-                response = requests.get(url_details_test, headers=self.headers)
-                request_data = response.json()
-                if self.has_test_changed(request_data):
-                    self.module.exit_json(changed=True, msg="Test updated")
+                if len(diffkeys) != 0:
+                    self.result['changed'] = True
+                    self.result['response'] = "Test updated"
                 else:
-                    self.module.exit_json(changed=False, msg="No data has been updated (is any data different?) Given: "+str(test_id))
-            response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)
-            self.check_response(response.json())
+                    self.result['response'] = "No data has been updated (is any data different?) Given: "+str(test_id)
+            else:
+                response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)
+                self.check_response(response.json())
+            self.result['diff']['before'] = {k: req_data[k] for k in diffkeys}
+            self.result['diff']['after'] = {k: self.data[k] for k in diffkeys}
 
-    def has_test_changed(self,req_data):
-        req_data = self.convert(req_data)
-        for key in self.data.keys():
-          if self.data[key] and str(self.data[key]) != str(req_data[key]):
-              return True
-        return False
-
-    # convert data returned by request to a similar and comparable data estruture
+    # convert data returned by request to a similar and comparable estruture
     def convert(self,req_data):
         req_data['WebsiteURL'] = req_data.pop('URI')
         req_data['TestTags'] = req_data.pop('Tags')
@@ -130,6 +143,10 @@ class StatusCake:
             if req_data[key] is False:
                 req_data[key] = 0
         return req_data
+
+    def get_result(self):
+        result = self.result
+        return result
 
 def run_module():
 
@@ -186,6 +203,8 @@ def run_module():
     else:
         test.create_test()
 
+    result = test.get_result()
+    module.exit_json(**result)
 
 def main():
     run_module()
