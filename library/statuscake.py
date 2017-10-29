@@ -1,5 +1,189 @@
+#!/usr/bin/python
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.1'}
+
+DOCUMENTATION = '''
+---
+module: statuscake
+short_description: Manage StatusCake tests
+description:
+    - Manage StatusCake tests by using StatusCake REST API.
+requirements:
+  - "requests >= 2.18.0"
+version_added: "2.2"
+author: "Raphael Pereira Ribeiro (@raphapr)"
+options:
+  username:
+    description:
+      - StatusCake account username.
+    required: true
+  api_key:
+    description:
+      - StatusCake API KEY.
+    required: true
+  name:
+    description:
+      - Name of the test. It must be unique.
+    required: true
+  url:
+    description:
+      - Website URL, either an IP or a FQDN.
+    required: true
+  state:
+    description:
+      - Attribute that specifies if the test has to be created or deleted.
+    required: false
+    default: present
+    choices: ['present', 'absent']
+  test_tags:
+    description:
+      - Website URL, either an IP or a FQDN.
+    required: false
+  check_rate:
+    description:
+      - The number of seconds between checks.
+    default: 300
+    required: false
+  test_type:
+    description:
+      - Test type to use
+    default: HTTP
+    required: false
+  contact_group:
+    description:
+      - Contact group ID
+    required: false
+  paused:
+    description: 
+      - 0 to unpause, 1 to pause the test.
+    default: 0
+    required: false
+  node_locations:
+    description: 
+      - Node locations ID separated by a comma
+    required: false
+  confirmation:
+    description: 
+      - Alert delay rate
+    default: 300
+    required: false
+  timeout:
+    description: 
+      - Timeout in seconds
+    default: 30
+    required: false
+  status_codes:
+    description: 
+      - Comma separated list of status codes to trigger error on
+    default: Standard codes
+    required: false
+  host:
+    description: 
+      - Website host
+    required: false
+  custom_header:
+    description: 
+      - Custom HTTP header supplied as JSON format
+    required: false
+  enable_ssl:
+    description: 
+      - Enable (1) / disable (0) checking ssl certificate
+    default: 0
+    required: false
+  follow_redirect:
+    description: 
+      - Enable (1) / disable (0) follow redirect
+    default: 0
+    required: false
+  find_string:
+    description: 
+      - A string that should either be found or not found.
+    required: false
+  do_not_find:
+    description: 
+      - If the above string should be found to trigger a alert.
+    default: 0
+    required: false
+'''
+
+EXAMPLES = '''
+---
+- name: Create statuscake test
+  statuscake: 
+    username: user
+    api_key: api
+    name: "MyWebSite" 
+    state: present 
+    url: "https://www.google.com" 
+    test_type: HTTP
+    confirmation: 3
+    paused: 0
+    check_rate: 3
+    status_codes: "204,205,206,303,400,401,403,404,405,406,408,410,413,444,429,494,495,496,499,500,501,502,503,504,505,506,507,508,509,510,511,521,522,523,524,520,598,599,301,302"
+    timeout: 300
+    test_tags: "Google, SSL"
+    node_locations: "UG4,HRSM1,BR1,BR3"
+    host: Google cloud
+    contact_group: 0
+    custom_header: ""
+    follow_redirect: 0
+    enable_ssl: 1
+    find_string: "/html>"
+    do_not_find: 0
+'''
+
+RETURN = '''
+---
+name:
+  description: Name of the StatusCake test.
+  returned: always
+  type: string
+  sample: MyWebsite
+state:
+  description: State of the StatusCake test.
+  returned: always
+  type: string
+  sample: present
+response:
+  description: HTTP response message of the request
+  returned: success
+  type: string
+  sample: "Test updated"
+diff:
+    description: Show the fields before and after each change
+    returned: success
+    type: dictionary
+    contains:
+        after:
+            description: StatusCake fields after the test update.
+            returned: success
+            type: dictionary
+            sample: { "confirmation": 300 }
+        before:
+            description: StatusCake fields before the test update.
+            returned: success
+            type: dictionary
+            sample: { "confirmation": 200 }
+
+'''
+
 import requests
-import json
 from ansible.module_utils.basic import *
 
 class StatusCake:
