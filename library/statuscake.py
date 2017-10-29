@@ -118,6 +118,7 @@ class StatusCake:
     def convert(self,req_data):
         req_data['WebsiteURL'] = req_data.pop('URI')
         req_data['TestTags'] = req_data.pop('Tags')
+        req_data = {k: req_data[k] for k in req_data.keys() if k in self.data.keys()}
         for key in req_data.keys():
             if  type(req_data[key]) is list:
                 req_data[key] = [item.encode('UTF8') for item in req_data[key]]
