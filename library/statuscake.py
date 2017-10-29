@@ -108,7 +108,6 @@ class StatusCake:
             else:
                 response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)
                 self.check_response(response.json())
-            self.result['diff']['after'] = self.data
         else:
             self.data['TestID'] = test_id
             url_details_test = self.URL_DETAILS_TEST + "/?TestID=" + str(test_id)
