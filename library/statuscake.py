@@ -40,24 +40,24 @@ options:
   name:
     description:
       - Name of the test. It must be unique.
-    required: true
+    required: false
   url:
     description:
       - Website URL, either an IP or a FQDN.
-    required: true
+    required: false
   state:
     description:
-      - Attribute that specifies if the test has to be created or deleted.
+      - Attribute that specifies if the test has to be created, deleted or a basic list of all tests.
     required: false
     default: present
-    choices: ['present', 'absent']
+    choices: ['present', 'absent', 'list']
   test_tags:
     description:
       - Website URL, either an IP or a FQDN.
     required: false
   check_rate:
     description:
-      - The number of seconds between checks.
+  - The number of seconds between checks.
     default: 300
     required: false
   test_type:
@@ -146,28 +146,50 @@ EXAMPLES = '''
     enable_ssl: 1
     find_string: "/html>"
     do_not_find: 0
+
+- name: List all statuscake tests
+  statuscake:
+    username: user
+    api_key: api
+    state: list
 '''
 
 RETURN = '''
 ---
 name:
   description: Name of the StatusCake test.
-  returned: always
+  returned: success, when needed
   type: string
   sample: MyWebsite
 state:
   description: State of the StatusCake test.
-  returned: always
+  returned: success, when needed
   type: string
   sample: present
 response:
   description: HTTP response message of the request
-  returned: success
+  returned: success, when needed
+  type: string
   type: string
   sample: "Test updated"
+tests:
+    description: List all tests.
+    returned: success, when needed
+    type: dictionary
+    contains:
+        output:
+            description: Return a basic list of all tests
+            returned: success
+            type: dictionary
+            sample: {"ContactGroup": ["0"], "NormalisedResponse": 0, "Paused": true, "Public": 0, "Status": "Up", "TestID": 2554887, "TestType": "HTTP", "Uptime": null, "WebsiteName": "MyWebsite"}
+        count:
+            description: Total number of tests
+            returned: success
+            type: int
+            sample: 25
 diff:
     description: Show the fields before and after each change
-    returned: success
+    returned: always
     type: dictionary
     contains:
         after:
@@ -247,12 +269,17 @@ class StatusCake:
             'changed': False,
             'name': self.name,
             'state': self.state,
-            'response': "",
             'diff': {
                 'before': {},
                 'after': {}
             }
         }
+
+    def get_all_tests(self):
+        response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
+        del self.result['name']
+        del self.result['state']
+        self.result.update({'tests': { 'output': response.json(), 'count': len(response.json()) }})
 
     def check_response(self,response):
         self.result['response'] = response['Message']
@@ -261,9 +288,8 @@ class StatusCake:
             
     def check_test(self):
         response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
-        json_resp = response.json()
 
-        for item in json_resp:
+        for item in response.json():
             if item['WebsiteName'] == self.name:
                 return item['TestID']
 
@@ -282,7 +308,6 @@ class StatusCake:
                 self.check_response(response.json())
                     
     def create_test(self):
-
         test_id = self.check_test()
         
         if not test_id:
@@ -336,9 +361,9 @@ def run_module():
     module_args = dict(
         username=dict(type='str', required=True),
         api_key=dict(type='str', required=True),
-        name=dict(type='str', required=True),
-        url=dict(type='str', required=True),
-        state = dict(default='present', choices=['absent', 'present']),
+        name=dict(type='str', required=False),
+        url=dict(type='str', required=False),
+        state = dict(choices=['absent', 'present', 'list'], default='present'),
         test_tags=dict(type='str', required=False),
         check_rate=dict(type='int', required=False),
         test_type=dict(type='str', required=False),
@@ -356,7 +381,14 @@ def run_module():
         do_not_find=dict(type='int', required=False),
     )
 
-    module = AnsibleModule(argument_spec=module_args, supports_check_mode=True)
+    module = AnsibleModule(
+            argument_spec=module_args,
+            supports_check_mode=True,
+            required_if=[
+              [ "state", "present", [ "name", "url" ] ],
+              [ "state", "absent", [ "name" ] ]
+            ]
+            )
 
     username = module.params['username']
     api_key = module.params['api_key']
@@ -383,8 +415,10 @@ def run_module():
 
     if state == "absent":
         test.delete_test()
-    else:
+    if state == "present":
         test.create_test()
+    if state == "list":
+        test.get_all_tests()
 
     result = test.get_result()
     module.exit_json(**result)
