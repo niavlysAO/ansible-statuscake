@@ -234,9 +234,6 @@ class StatusCake:
         self.find_string = find_string
         self.do_not_find = do_not_find
 
-        if self.custom_header:
-            data['CustomHeader'] = self.custom_header.replace("'", "\"")
-
         if not check_rate:
             self.check_rate = 300
         else:
@@ -264,6 +261,9 @@ class StatusCake:
                 "FindString": self.find_string,
                 "DoNotFind": self.do_not_find,
                 }
+
+        if self.custom_header:
+            self.data['CustomHeader'] = self.custom_header.replace("'", "\"")
 
         self.result = {
             'changed': False,
@@ -338,7 +338,8 @@ class StatusCake:
     # convert data returned by request to a similar and comparable estruture
     def convert(self,req_data):
         req_data['WebsiteURL'] = req_data.pop('URI')
-        req_data['TestTags'] = req_data.pop('Tags')
+        req_data['TestTags'] = req_data.pop('Tags',None)
+        req_data['ContactGroup'] = req_data['ContactGroups'][0]['ID']
         req_data = {k: req_data[k] for k in req_data.keys() if k in self.data.keys()}
         for key in req_data.keys():
             if  type(req_data[key]) is list:
@@ -350,6 +351,7 @@ class StatusCake:
                 req_data[key] = 1
             if req_data[key] is False:
                 req_data[key] = 0
+        req_data['EnableSSLWarning'] = self.data['EnableSSLWarning']
         return req_data
 
     def get_result(self):
