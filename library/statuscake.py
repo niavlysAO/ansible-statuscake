@@ -346,9 +346,9 @@ class StatusCake:
 
     # convert data returned by request to a similar and comparable estruture
     def convert(self,req_data):
-        req_data['WebsiteURL'] = req_data.pop('URI')
+        req_data['WebsiteURL'] = req_data.pop('URI',None)
         req_data['TestTags'] = req_data.pop('Tags',None)
-        req_data['ContactGroup'] = req_data['ContactGroups'][0]['ID']
+        req_data['ContactGroup'] = req_data['ContactGroups'][0]['ID'] if req_data['ContactGroup'] else None
         req_data = {k: req_data[k] for k in req_data.keys() if k in self.data.keys()}
         for key in req_data.keys():
             if  type(req_data[key]) is list:
