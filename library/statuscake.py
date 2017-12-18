@@ -294,6 +294,14 @@ class StatusCake:
         self.result['response'] = response['Message']
         if response['Success']:
             self.result['changed'] = True
+        elif not response['Message'].startswith('No data has been updated'):
+            errormsg = response['Message']
+
+            if response.get('Issues'):
+                errormsg += ' '
+                errormsg += '; '.join("{0}: {1}".format(k, v) for k, v in response['Issues'].items())
+
+            self.module.fail_json(msg=errormsg)
             
     def check_test(self):
         response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
