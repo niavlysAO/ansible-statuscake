@@ -70,53 +70,53 @@ options:
       - Contact group ID
     required: false
   paused:
-    description: 
+    description:
       - 0 to unpause, 1 to pause the test.
     default: 0
     required: false
   node_locations:
-    description: 
+    description:
       - Node locations ID separated by a comma
     required: false
   confirmation:
-    description: 
+    description:
       - Alert delay rate
     default: 300
     required: false
   timeout:
-    description: 
+    description:
       - Timeout in seconds
     default: 30
     required: false
   status_codes:
-    description: 
+    description:
       - Comma separated list of status codes to trigger error on
     default: Standard codes
     required: false
   host:
-    description: 
+    description:
       - Website host
     required: false
   custom_header:
-    description: 
+    description:
       - Custom HTTP header supplied as JSON format
     required: false
   enable_ssl:
-    description: 
+    description:
       - Enable (1) / disable (0) checking ssl certificate
     default: 0
     required: false
   follow_redirect:
-    description: 
+    description:
       - Enable (1) / disable (0) follow redirect
     default: 0
     required: false
   find_string:
-    description: 
+    description:
       - A string that should either be found or not found.
     required: false
   do_not_find:
-    description: 
+    description:
       - If the above string should be found to trigger a alert.
     default: 0
     required: false
@@ -129,12 +129,12 @@ options:
 EXAMPLES = '''
 ---
 - name: Create statuscake test
-  statuscake: 
+  statuscake:
     username: user
     api_key: api
-    name: "MyWebSite" 
-    state: present 
-    url: "https://www.google.com" 
+    name: "MyWebSite"
+    state: present
+    url: "https://www.google.com"
     test_type: HTTP
     confirmation: 3
     paused: 0
@@ -213,12 +213,18 @@ diff:
 import requests
 from ansible.module_utils.basic import *
 
+
 class StatusCake:
     URL_UPDATE_TEST = "https://app.statuscake.com/API/Tests/Update"
     URL_ALL_TESTS = "https://app.statuscake.com/API/Tests"
     URL_DETAILS_TEST = "https://app.statuscake.com/API/Tests/Details"
 
-    def __init__(self, module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl, find_string, do_not_find, post_raw):
+    def __init__(self, module, username, api_key, name, url, state,
+                 test_tags, check_rate, test_type, contact_group, paused,
+                 node_locations, confirmation, timeout, status_codes, host,
+                 custom_header, follow_redirect, enable_ssl, find_string,
+                 do_not_find, post_raw):
+
         self.headers = {"Username": username, "API": api_key}
         self.module = module
         self.name = name
@@ -251,22 +257,22 @@ class StatusCake:
             self.test_type = test_type
 
         self.data = {"WebsiteName": self.name,
-                "WebsiteURL": self.url,
-                "CheckRate": self.check_rate,
-                "TestType": self.test_type,
-                "TestTags": self.test_tags,
-                "ContactGroup": self.contact_group,
-                "Paused": self.paused,
-                "NodeLocations": self.node_locations,
-                "Confirmation": self.confirmation,
-                "Timeout": self.timeout,
-                "StatusCodes": self.status_codes,
-                "WebsiteHost": self.host,
-                "FollowRedirect": self.follow_redirect,
-                "EnableSSLWarning": self.enable_ssl,
-                "FindString": self.find_string,
-                "DoNotFind": self.do_not_find,
-                }
+                     "WebsiteURL": self.url,
+                     "CheckRate": self.check_rate,
+                     "TestType": self.test_type,
+                     "TestTags": self.test_tags,
+                     "ContactGroup": self.contact_group,
+                     "Paused": self.paused,
+                     "NodeLocations": self.node_locations,
+                     "Confirmation": self.confirmation,
+                     "Timeout": self.timeout,
+                     "StatusCodes": self.status_codes,
+                     "WebsiteHost": self.host,
+                     "FollowRedirect": self.follow_redirect,
+                     "EnableSSLWarning": self.enable_ssl,
+                     "FindString": self.find_string,
+                     "DoNotFind": self.do_not_find,
+                     }
 
         if self.custom_header:
             self.data['CustomHeader'] = self.custom_header.replace("'", "\"")
@@ -288,9 +294,10 @@ class StatusCake:
         response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
         del self.result['name']
         del self.result['state']
-        self.result.update({'tests': { 'output': response.json(), 'count': len(response.json()) }})
+        self.result.update({'tests': {'output': response.json(),
+                            'count': len(response.json())}})
 
-    def check_response(self,response):
+    def check_response(self, response):
         self.result['response'] = response['Message']
         if response['Success']:
             self.result['changed'] = True
@@ -299,10 +306,11 @@ class StatusCake:
 
             if response.get('Issues'):
                 errormsg += ' '
-                errormsg += '; '.join("{0}: {1}".format(k, v) for k, v in response['Issues'].items())
+                errormsg += ('; '.join("{0}: {1}".format(k, v)
+                             for k, v in response['Issues'].items()))
 
             self.module.fail_json(msg=errormsg)
-            
+
     def check_test(self):
         response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
 
@@ -319,50 +327,63 @@ class StatusCake:
             data = {'TestID': test_id}
             if self.module.check_mode:
                 self.result['changed'] = True
-                self.result['response'] = "This Check Has Been Deleted. It can not be recovered."
+                self.result['response'] = ("This Check Has Been Deleted. " +
+                                           "It can not be recovered.")
             else:
-                response = requests.delete(self.URL_DETAILS_TEST, headers=self.headers,data=data)
+                response = requests.delete(self.URL_DETAILS_TEST,
+                                           headers=self.headers, data=data)
                 self.check_response(response.json())
-                    
+
     def create_test(self):
         test_id = self.check_test()
-        
+
         if not test_id:
             if self.module.check_mode:
                 self.result['changed'] = True
                 self.result['response'] = "Test inserted"
             else:
-                response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)
+                response = requests.put(self.URL_UPDATE_TEST,
+                                        headers=self.headers,
+                                        data=self.data)
                 self.check_response(response.json())
         else:
             self.data['TestID'] = test_id
-            url_details_test = self.URL_DETAILS_TEST + "/?TestID=" + str(test_id)
+            url_details_test = (self.URL_DETAILS_TEST +
+                                "/?TestID=" +
+                                str(test_id))
             response = requests.get(url_details_test, headers=self.headers)
             req_data = self.convert(response.json())
-            diffkeys = [k for k in self.data if self.data[k] and str(self.data[k]) != str(req_data[k])]
+            diffkeys = ([k for k in self.data if self.data[k] and
+                        str(self.data[k]) != str(req_data[k])])
             if self.module.check_mode:
                 if len(diffkeys) != 0:
                     self.result['changed'] = True
                     self.result['response'] = "Test updated"
                 else:
-                    self.result['response'] = "No data has been updated (is any data different?) Given: "+str(test_id)
+                    self.result['response'] = ("No data has been updated " +
+                                               "(is any data different?) " +
+                                               "Given: "+str(test_id))
             else:
-                response = requests.put(self.URL_UPDATE_TEST, headers=self.headers, data=self.data)
+                response = requests.put(self.URL_UPDATE_TEST,
+                                        headers=self.headers,
+                                        data=self.data)
                 self.check_response(response.json())
             self.result['diff']['before'] = {k: req_data[k] for k in diffkeys}
             self.result['diff']['after'] = {k: self.data[k] for k in diffkeys}
 
     # convert data returned by request to a similar and comparable estruture
-    def convert(self,req_data):
-        req_data['WebsiteURL'] = req_data.pop('URI',None)
-        req_data['TestTags'] = req_data.pop('Tags',None)
-        req_data['ContactGroup'] = req_data['ContactGroups'][0]['ID'] if req_data['ContactGroup'] else None
-        req_data = {k: req_data[k] for k in req_data.keys() if k in self.data.keys()}
+    def convert(self, req_data):
+        req_data['WebsiteURL'] = req_data.pop('URI', None)
+        req_data['TestTags'] = req_data.pop('Tags', None)
+        req_data['ContactGroup'] = (req_data['ContactGroups'][0]['ID']
+                                    if req_data['ContactGroup'] else None)
+        req_data = ({k: req_data[k] for k in req_data.keys()
+                    if k in self.data.keys()})
         for key in req_data.keys():
-            if  type(req_data[key]) is list:
+            if type(req_data[key]) is list:
                 req_data[key] = [item.encode('UTF8') for item in req_data[key]]
                 req_data[key] = ','.join(req_data[key])
-            if  type(req_data[key]) is unicode:
+            if type(req_data[key]) is unicode:
                 req_data[key] = req_data[key].encode('UTF-8')
             if req_data[key] is True:
                 req_data[key] = 1
@@ -375,6 +396,7 @@ class StatusCake:
         result = self.result
         return result
 
+
 def run_module():
 
     module_args = dict(
@@ -382,7 +404,7 @@ def run_module():
         api_key=dict(type='str', required=True),
         name=dict(type='str', required=False),
         url=dict(type='str', required=False),
-        state = dict(choices=['absent', 'present', 'list'], default='present'),
+        state=dict(choices=['absent', 'present', 'list'], default='present'),
         test_tags=dict(type='str', required=False),
         check_rate=dict(type='int', required=False),
         test_type=dict(type='str', required=False),
@@ -405,8 +427,8 @@ def run_module():
             argument_spec=module_args,
             supports_check_mode=True,
             required_if=[
-              [ "state", "present", [ "name", "url" ] ],
-              [ "state", "absent", [ "name" ] ]
+              ["state", "present", ["name", "url"]],
+              ["state", "absent", ["name"]]
             ]
             )
 
@@ -432,7 +454,28 @@ def run_module():
     do_not_find = module.params['do_not_find']
     post_raw = module.params['post_raw']
 
-    test = StatusCake(module, username, api_key, name, url, state, test_tags, check_rate, test_type, contact_group, paused, node_locations, confirmation, timeout, status_codes, host, custom_header, follow_redirect, enable_ssl, find_string, do_not_find, post_raw)
+    test = StatusCake(module,
+                      username,
+                      api_key,
+                      name,
+                      url,
+                      state,
+                      test_tags,
+                      check_rate,
+                      test_type,
+                      contact_group,
+                      paused,
+                      node_locations,
+                      confirmation,
+                      timeout,
+                      status_codes,
+                      host,
+                      custom_header,
+                      follow_redirect,
+                      enable_ssl,
+                      find_string,
+                      do_not_find,
+                      post_raw)
 
     if state == "absent":
         test.delete_test()
@@ -444,8 +487,10 @@ def run_module():
     result = test.get_result()
     module.exit_json(**result)
 
+
 def main():
     run_module()
 
-if __name__ == '__main__':  
+
+if __name__ == '__main__':
     main()
