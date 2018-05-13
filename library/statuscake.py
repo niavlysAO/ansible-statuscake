@@ -65,6 +65,10 @@ options:
       - Test type to use
     default: HTTP
     required: false
+  port:
+    description:
+      - A Port to use on TCP Tests (mutually exclusive with tcp_type when it is TCP)
+    required: false
   contact_group:
     description:
       - Contact group ID
@@ -220,7 +224,7 @@ class StatusCake:
     URL_DETAILS_TEST = "https://app.statuscake.com/API/Tests/Details"
 
     def __init__(self, module, username, api_key, name, url, state,
-                 test_tags, check_rate, test_type, contact_group, paused,
+                 test_tags, check_rate, test_type, port, contact_group, paused,
                  node_locations, confirmation, timeout, status_codes, host,
                  custom_header, follow_redirect, enable_ssl, find_string,
                  do_not_find, post_raw):
@@ -244,6 +248,7 @@ class StatusCake:
         self.enable_ssl = enable_ssl
         self.find_string = find_string
         self.do_not_find = do_not_find
+        self.port = port
         self.post_raw = post_raw
 
         if not check_rate:
@@ -271,6 +276,7 @@ class StatusCake:
                      "FollowRedirect": self.follow_redirect,
                      "EnableSSLWarning": self.enable_ssl,
                      "FindString": self.find_string,
+                     "Port": self.port,
                      "DoNotFind": self.do_not_find,
                      }
 
@@ -408,6 +414,7 @@ def run_module():
         test_tags=dict(type='str', required=False),
         check_rate=dict(type='int', required=False),
         test_type=dict(type='str', required=False),
+        port=dict(type='int', required=False),
         contact_group=dict(type='int', required=False),
         paused=dict(type='int', required=False),
         node_locations=dict(type='str', required=False),
@@ -428,7 +435,8 @@ def run_module():
             supports_check_mode=True,
             required_if=[
               ["state", "present", ["name", "url"]],
-              ["state", "absent", ["name"]]
+              ["state", "absent", ["name"]],
+              ["test_type", "TCP", ["port"]]
             ]
             )
 
@@ -440,6 +448,7 @@ def run_module():
     test_tags = module.params['test_tags']
     check_rate = module.params['check_rate']
     test_type = module.params['test_type']
+    port = module.params['port']
     contact_group = module.params['contact_group']
     paused = module.params['paused']
     node_locations = module.params['node_locations']
@@ -463,6 +472,7 @@ def run_module():
                       test_tags,
                       check_rate,
                       test_type,
+                      port,
                       contact_group,
                       paused,
                       node_locations,
