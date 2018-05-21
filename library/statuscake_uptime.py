@@ -20,10 +20,10 @@ ANSIBLE_METADATA = {'status': ['preview'],
 
 DOCUMENTATION = '''
 ---
-module: statuscake
-short_description: Manage StatusCake tests
+module: statuscake_uptime
+short_description: Manage StatusCake uptime tests
 description:
-    - Manage StatusCake tests by using StatusCake REST API.
+    - Manage StatusCake uptime tests by using StatusCake REST API.
 requirements:
   - "requests >= 2.18.0"
 version_added: "2.2"
@@ -218,7 +218,7 @@ import requests
 from ansible.module_utils.basic import *
 
 
-class StatusCake:
+class StatusCakeUptime:
     URL_UPDATE_TEST = "https://app.statuscake.com/API/Tests/Update"
     URL_ALL_TESTS = "https://app.statuscake.com/API/Tests"
     URL_DETAILS_TEST = "https://app.statuscake.com/API/Tests/Details"
@@ -463,29 +463,29 @@ def run_module():
     do_not_find = module.params['do_not_find']
     post_raw = module.params['post_raw']
 
-    test = StatusCake(module,
-                      username,
-                      api_key,
-                      name,
-                      url,
-                      state,
-                      test_tags,
-                      check_rate,
-                      test_type,
-                      port,
-                      contact_group,
-                      paused,
-                      node_locations,
-                      confirmation,
-                      timeout,
-                      status_codes,
-                      host,
-                      custom_header,
-                      follow_redirect,
-                      enable_ssl,
-                      find_string,
-                      do_not_find,
-                      post_raw)
+    test = StatusCakeUptime(module,
+                            username,
+                            api_key,
+                            name,
+                            url,
+                            state,
+                            test_tags,
+                            check_rate,
+                            test_type,
+                            port,
+                            contact_group,
+                            paused,
+                            node_locations,
+                            confirmation,
+                            timeout,
+                            status_codes,
+                            host,
+                            custom_header,
+                            follow_redirect,
+                            enable_ssl,
+                            find_string,
+                            do_not_find,
+                            post_raw)
 
     if state == "absent":
         test.delete_test()

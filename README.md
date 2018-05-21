@@ -1,11 +1,16 @@
 # Ansible-statuscake
 
-Ansible module for manage statuscake tests on StatusCake API.
+Ansible modules for manage statuscake tests on StatusCake API.
 
 ## Requirements
 
 Ansible 2.2+
 
+## Modules
+
+- statuscake_uptime
+- statuscake_ssl
+
 ## Documentation
 
-[In code](library/statuscake.py)
+All documentation is available on code.
