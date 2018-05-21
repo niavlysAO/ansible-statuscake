@@ -31,12 +31,12 @@ author: "Raphael Pereira Ribeiro (@raphapr)"
 options:
   username:
     description:
-      - StatusCake account username.
-    required: true
+      - StatusCake account username. Can also be supplied via $STATUSCAKE_USERNAME env variable.
+    required: false
   api_key:
     description:
-      - StatusCake API KEY.
-    required: true
+      - StatusCake API KEY. Can also be supplied via $STATUSCAKE_API_KEY env variable.
+    required: false
   domain:
     description:
       - URL to check, has to start with https://
@@ -256,8 +256,8 @@ class StatusCakeSSL:
 def run_module():
 
     module_args = dict(
-        username=dict(type='str', required=True),
-        api_key=dict(type='str', required=True),
+        username=dict(type='str', required=False),
+        api_key=dict(type='str', required=False),
         state=dict(choices=['absent', 'present', 'list'], default='present'),
         domain=dict(type='str', required=False),
         checkrate=dict(type='int', required=False),
@@ -287,6 +287,16 @@ def run_module():
     alert_expiry = module.params['alert_expiry']
     alert_reminder = module.params['alert_reminder']
     alert_broken = module.params['alert_broken']
+
+    if not (username and api_key) and \
+            os.environ.get('STATUSCAKE_USERNAME') and \
+            os.environ.get('STATUSCAKE_API_KEY'):
+        username = os.environ.get('STATUSCAKE_USERNAME')
+        api_key = os.environ.get('STATUSCAKE_API_KEY')
+    else:
+        module.fail_json(msg="You must set STATUSCAKE_USERNAME and " +
+                             "STATUSCAKE_API_KEY environment variables " +
+                             "or set username/api_key module arguments")
 
     test = StatusCakeSSL(module,
                          username,
