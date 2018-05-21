@@ -21,7 +21,7 @@ ANSIBLE_METADATA = {'status': ['preview'],
 DOCUMENTATION = '''
 ---
 module: statuscake_uptime
-short_description: Manage StatusCake uptimetests
+short_description: Manage StatusCake uptime tests
 description:
     - Manage StatusCake uptime tests by using StatusCake REST API.
 requirements:
