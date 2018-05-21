@@ -16,7 +16,7 @@
 
 ANSIBLE_METADATA = {'status': ['preview'],
                     'supported_by': 'community',
-                    'version': '1.1'}
+                    'version': '0.1'}
 
 DOCUMENTATION = '''
 ---
@@ -164,7 +164,7 @@ class StatusCakeSSL:
 
     def check_response(self, response):
         errormsg = ''
-        if response.get('Message'):
+        if response.get('Message') and not self.result.get('response'):
             self.result['response'] = response['Message']
             errormsg = response['Message']
         if response.get('Success'):
@@ -217,6 +217,7 @@ class StatusCakeSSL:
                 response = requests.put(self.URL_UPDATE_TEST,
                                         headers=self.headers,
                                         data=self.data)
+                self.result['response'] = "SSL test inserted"
                 self.check_response(response.json())
         else:
             test_id = req_data['id']
@@ -233,12 +234,17 @@ class StatusCakeSSL:
                                                "(is any data different?) " +
                                                "Given: "+str(test_id))
             else:
-                self.data.pop('domain')
-                self.data['id'] = test_id
-                response = requests.put(self.URL_UPDATE_TEST,
-                                        headers=self.headers,
-                                        data=self.data)
-                self.check_response(response.json())
+                if len(diffkeys) == 0:
+                    self.result['response'] = ("No data has been updated " +
+                                               "(is any data different?) " +
+                                               "Given: "+str(test_id))
+                else:
+                    self.data.pop('domain')
+                    self.data['id'] = test_id
+                    response = requests.put(self.URL_UPDATE_TEST,
+                                            headers=self.headers,
+                                            data=self.data)
+                    self.check_response(response.json())
             self.result['diff']['before'] = {k: req_data[k] for k in diffkeys}
             self.result['diff']['after'] = {k: self.data[k] for k in diffkeys}
 
