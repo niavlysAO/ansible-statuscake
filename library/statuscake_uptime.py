@@ -31,12 +31,12 @@ author: "Raphael Pereira Ribeiro (@raphapr)"
 options:
   username:
     description:
-      - StatusCake account username.
-    required: true
+      - StatusCake account username. Can also be supplied via $STATUSCAKE_USERNAME env variable.
+    required: false
   api_key:
     description:
-      - StatusCake API KEY.
-    required: true
+      - StatusCake API KEY. Can also be supplied via $STATUSCAKE_API_KEY env variable.
+    required: false
   name:
     description:
       - Name of the test. It must be unique.
@@ -406,8 +406,8 @@ class StatusCakeUptime:
 def run_module():
 
     module_args = dict(
-        username=dict(type='str', required=True),
-        api_key=dict(type='str', required=True),
+        username=dict(type='str', required=False),
+        api_key=dict(type='str', required=False),
         name=dict(type='str', required=False),
         url=dict(type='str', required=False),
         state=dict(choices=['absent', 'present', 'list'], default='present'),
@@ -462,6 +462,16 @@ def run_module():
     find_string = module.params['find_string']
     do_not_find = module.params['do_not_find']
     post_raw = module.params['post_raw']
+
+    if not (username and api_key) and \
+            os.environ.get('STATUSCAKE_USERNAME') and \
+            os.environ.get('STATUSCAKE_API_KEY'):
+        username = os.environ.get('STATUSCAKE_USERNAME')
+        api_key = os.environ.get('STATUSCAKE_API_KEY')
+    else:
+        module.fail_json(msg="You must set STATUSCAKE_USERNAME and " +
+                             "STATUSCAKE_API_KEY environment variables " +
+                             "or set username/api_key module arguments")
 
     test = StatusCakeUptime(module,
                             username,
