@@ -1,0 +1,313 @@
+#!/usr/bin/python
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+
+ANSIBLE_METADATA = {'status': ['preview'],
+                    'supported_by': 'community',
+                    'version': '1.1'}
+
+DOCUMENTATION = '''
+---
+module: statuscake_ssl
+short_description: Manage StatusCake SSL tests
+description:
+    - Manage StatusCake SSL tests by using StatusCake REST API.
+requirements:
+  - "requests >= 2.18.0"
+version_added: "2.2"
+author: "Raphael Pereira Ribeiro (@raphapr)"
+options:
+  username:
+    description:
+      - StatusCake account username.
+    required: true
+  api_key:
+    description:
+      - StatusCake API KEY.
+    required: true
+  domain:
+    description:
+      - URL to check, has to start with https://
+    required: true
+  checkrate:
+    description:
+      - Checkrate in seconds.
+    required: false
+    default: 3600
+    choices: [300, 600, 1800, 3600, 86400, 2073600]
+  contact_group:
+    description:
+      - Contact group ID
+    required: True
+  alert_at:
+    description:
+      - When you wish to receive reminders. Must be exactly 3 numeric values separated by commas
+    default: "1,7,30"
+    required: false
+  alert_expiry:
+    description:
+    - Set to true to enable expiration alerts. False to disable
+    default: true
+    required: false
+  alert_reminder:
+    description:
+      - Set to true to enable reminder alerts. False to disable. Also see alert_at
+    default: true
+    required: false
+  alert_broken:
+    description:
+      - Set to true to enable broken alerts. False to disable
+    default: true
+    required: false
+'''
+
+EXAMPLES = '''
+---
+- name: Create statuscake test
+  statuscake_ssl:
+    username: user
+    api_key: api
+    domain: "https://example.com"
+    checkrate: 86400
+    contact_group: 1503
+    alert_at: 59,60,61
+    alert_expiry: false
+    alert_reminder: false
+    alert_broken: false
+'''
+
+import requests
+from ansible.module_utils.basic import *
+
+
+class StatusCakeSSL:
+    URL_UPDATE_TEST = "https://app.statuscake.com/API/SSL/Update"
+    URL_ALL_TESTS = "https://app.statuscake.com/API/SSL"
+
+    def __init__(self, module, username, api_key, state, domain, checkrate,
+                 contact_group, alert_at, alert_expiry, alert_reminder,
+                 alert_broken):
+
+        self.headers = {"Username": username, "API": api_key}
+        self.module = module
+        self.state = state
+        self.domain = domain
+        self.checkrate = checkrate
+        self.contact_group = contact_group
+        self.alert_at = alert_at
+        self.alert_expiry = alert_expiry
+        self.alert_reminder = alert_reminder
+        self.alert_broken = alert_broken
+
+        if not checkrate:
+            self.checkrate = 3600
+        else:
+            self.checkrate = checkrate
+
+        if not alert_at:
+            self.alert_at = "1,7,30"
+        else:
+            self.alert_at = alert_at
+
+        if not alert_expiry:
+            self.alert_expiry = True
+        else:
+            self.alert_expiry = alert_expiry
+
+        if not alert_reminder:
+            self.alert_reminder = True
+        else:
+            self.alert_reminder = alert_reminder
+
+        if not alert_broken:
+            self.alert_broken = True
+        else:
+            self.alert_broken = alert_broken
+
+        self.data = {"domain": self.domain,
+                     "checkrate": self.checkrate,
+                     "contact_groups": self.contact_group,
+                     "alert_at": self.alert_at,
+                     "alert_expiry": self.alert_expiry,
+                     "alert_reminder": self.alert_reminder,
+                     "alert_broken": self.alert_broken,
+                     }
+
+        self.result = {
+            'changed': False,
+            'domain': self.domain,
+            'state': self.state,
+            'diff': {
+                'before': {},
+                'after': {}
+            }
+        }
+
+    def get_all_tests(self):
+        response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
+        del self.result['domain']
+        del self.result['state']
+        self.result.update({'tests': {'output': response.json(),
+                            'count': len(response.json())}})
+
+    def check_response(self, response):
+        errormsg = ''
+        if response.get('Message'):
+            self.result['response'] = response['Message']
+            errormsg = response['Message']
+        if response.get('Success'):
+            self.result['changed'] = True
+        else:
+            if response.get('Issues'):
+                errormsg += ' '
+                errormsg += ('; '.join("{0}: {1}".format(k, v)
+                             for k, v in response['Issues'].items()))
+
+            self.module.fail_json(msg=errormsg)
+
+    def check_test(self):
+        response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
+
+        for item in response.json():
+            if item['domain'] == self.domain:
+                return {"alert_at": item['alert_at'],
+                        "alert_broken": item['alert_broken'],
+                        "alert_expiry": item['alert_expiry'],
+                        "alert_reminder": item['alert_reminder'],
+                        "contact_groups": item['contact_groups'][0],
+                        "domain": item['domain'],
+                        "id": item['id']
+                        }
+
+    def delete_test(self):
+        test = self.check_test()
+
+        if not test:
+            self.result['response'] = "Test not found on this account"
+        else:
+            test_id = test['id']
+            if self.module.check_mode:
+                self.result['changed'] = True
+                self.result['response'] = ("Deletion successful")
+            else:
+                response = requests.delete(self.URL_UPDATE_TEST + "?id=" +
+                                           str(test_id), headers=self.headers)
+                self.check_response(response.json())
+
+    def create_test(self):
+        req_data = self.check_test()
+
+        if not req_data:
+            if self.module.check_mode:
+                self.result['changed'] = True
+                self.result['response'] = "SSL test inserted"
+            else:
+                response = requests.put(self.URL_UPDATE_TEST,
+                                        headers=self.headers,
+                                        data=self.data)
+                self.check_response(response.json())
+        else:
+            test_id = req_data['id']
+            diffkeys = ([k for k in self.data if self.data[k] and
+                        k != "checkrate" and
+                        str(self.data[k]) != str(req_data[k])])
+            if self.module.check_mode:
+                if len(diffkeys) != 0:
+                    self.result['changed'] = True
+                    self.result['response'] = ("SSL has been updated " +
+                                               "successfully.")
+                else:
+                    self.result['response'] = ("No data has been updated " +
+                                               "(is any data different?) " +
+                                               "Given: "+str(test_id))
+            else:
+                self.data.pop('domain')
+                self.data['id'] = test_id
+                response = requests.put(self.URL_UPDATE_TEST,
+                                        headers=self.headers,
+                                        data=self.data)
+                self.check_response(response.json())
+            self.result['diff']['before'] = {k: req_data[k] for k in diffkeys}
+            self.result['diff']['after'] = {k: self.data[k] for k in diffkeys}
+
+    def get_result(self):
+        result = self.result
+        return result
+
+
+def run_module():
+
+    module_args = dict(
+        username=dict(type='str', required=True),
+        api_key=dict(type='str', required=True),
+        state=dict(choices=['absent', 'present', 'list'], default='present'),
+        domain=dict(type='str', required=False),
+        checkrate=dict(type='int', required=False),
+        contact_group=dict(type='int', required=False),
+        alert_at=dict(type='str', required=False),
+        alert_expiry=dict(type='bool', required=False),
+        alert_reminder=dict(type='bool', required=False),
+        alert_broken=dict(type='bool', required=False)
+    )
+
+    module = AnsibleModule(
+            argument_spec=module_args,
+            supports_check_mode=True,
+            required_if=[
+              ["state", "present", ["domain", "contact_group"]],
+              ["state", "absent", ["domain"]],
+            ]
+            )
+
+    username = module.params['username']
+    api_key = module.params['api_key']
+    state = module.params['state']
+    domain = module.params['domain']
+    checkrate = module.params['checkrate']
+    contact_group = module.params['contact_group']
+    alert_at = module.params['alert_at']
+    alert_expiry = module.params['alert_expiry']
+    alert_reminder = module.params['alert_reminder']
+    alert_broken = module.params['alert_broken']
+
+    test = StatusCakeSSL(module,
+                         username,
+                         api_key,
+                         state,
+                         domain,
+                         checkrate,
+                         contact_group,
+                         alert_at,
+                         alert_expiry,
+                         alert_reminder,
+                         alert_broken)
+
+    if state == "absent":
+        test.delete_test()
+    if state == "present":
+        test.create_test()
+    if state == "list":
+        test.get_all_tests()
+
+    result = test.get_result()
+    module.exit_json(**result)
+
+
+def main():
+    run_module()
+
+
+if __name__ == '__main__':
+    main()
