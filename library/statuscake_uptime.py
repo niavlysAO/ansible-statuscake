@@ -20,10 +20,10 @@ ANSIBLE_METADATA = {'status': ['preview'],
 
 DOCUMENTATION = '''
 ---
-module: statuscake
-short_description: Manage StatusCake tests
+module: statuscake_uptime
+short_description: Manage StatusCake uptimetests
 description:
-    - Manage StatusCake tests by using StatusCake REST API.
+    - Manage StatusCake uptimetests by using StatusCake REST API.
 requirements:
   - "requests >= 2.18.0"
 version_added: "2.2"
@@ -218,7 +218,7 @@ import requests
 from ansible.module_utils.basic import *
 
 
-class StatusCake:
+class StatusCakeUptime:
     URL_UPDATE_TEST = "https://app.statuscake.com/API/Tests/Update"
     URL_ALL_TESTS = "https://app.statuscake.com/API/Tests"
     URL_DETAILS_TEST = "https://app.statuscake.com/API/Tests/Details"
