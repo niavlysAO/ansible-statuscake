@@ -293,7 +293,9 @@ def run_module():
             os.environ.get('STATUSCAKE_API_KEY'):
         username = os.environ.get('STATUSCAKE_USERNAME')
         api_key = os.environ.get('STATUSCAKE_API_KEY')
-    else:
+    if not (username and api_key) and \
+            not (os.environ.get('STATUSCAKE_USERNAME') and \
+            os.environ.get('STATUSCAKE_API_KEY')):
         module.fail_json(msg="You must set STATUSCAKE_USERNAME and " +
                              "STATUSCAKE_API_KEY environment variables " +
                              "or set username/api_key module arguments")
