@@ -406,7 +406,7 @@ def run_module():
         check_rate=dict(type='int', required=False),
         test_type=dict(type='str', required=False),
         port=dict(type='int', required=False),
-        contact_group=dict(type='int', required=False),
+        contact_group=dict(type='str', required=False),
         paused=dict(type='int', required=False),
         node_locations=dict(type='str', required=False),
         confirmation=dict(type='int', required=False),
