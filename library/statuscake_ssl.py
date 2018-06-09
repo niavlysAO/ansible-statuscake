@@ -169,19 +169,12 @@ class StatusCakeSSL:
                             'count': len(response.json())}})
 
     def check_response(self, response):
-        errormsg = ''
-        if response.get('Message') and not self.result.get('response'):
-            self.result['response'] = response['Message']
-            errormsg = response['Message']
         if response.get('Success'):
             self.result['changed'] = True
+        elif response.get('Message') and not self.result.get('response'):
+            self.result['response'] = response['Message']
         else:
-            if response.get('Issues'):
-                errormsg += ' '
-                errormsg += ('; '.join("{0}: {1}".format(k, v)
-                             for k, v in response['Issues'].items()))
-
-            self.module.fail_json(msg=errormsg)
+            self.module.fail_json(msg=response)
 
     def check_test(self):
         response = requests.get(self.URL_ALL_TESTS, headers=self.headers)
