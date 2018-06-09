@@ -41,6 +41,12 @@ options:
     description:
       - URL to check, has to start with https://
     required: true
+  state:
+    description:
+      - Attribute that specifies if the SSL test has to be created, deleted or a basic list of all SSL tests.
+    required: false
+    default: present
+    choices: ['present', 'absent', 'list']
   checkrate:
     description:
       - Checkrate in seconds.
