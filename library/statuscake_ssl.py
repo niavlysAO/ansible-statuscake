@@ -77,6 +77,11 @@ options:
       - Set to true to enable broken alerts. False to disable
     default: true
     required: false
+  alert_mixed:
+    description:
+      - Set to true to enable mixed content warnings. False to disable
+    default: true
+    required: false
 '''
 
 EXAMPLES = '''
@@ -92,6 +97,7 @@ EXAMPLES = '''
     alert_expiry: false
     alert_reminder: false
     alert_broken: false
+    alert_mixed: true
 '''
 
 import requests
@@ -104,7 +110,7 @@ class StatusCakeSSL:
 
     def __init__(self, module, username, api_key, state, domain, checkrate,
                  contact_group, alert_at, alert_expiry, alert_reminder,
-                 alert_broken):
+                 alert_broken, alert_mixed):
 
         self.headers = {"Username": username, "API": api_key}
         self.module = module
@@ -116,6 +122,7 @@ class StatusCakeSSL:
         self.alert_expiry = alert_expiry
         self.alert_reminder = alert_reminder
         self.alert_broken = alert_broken
+        self.alert_mixed = alert_mixed
 
         if not checkrate:
             self.checkrate = 3600
@@ -142,6 +149,11 @@ class StatusCakeSSL:
         else:
             self.alert_broken = alert_broken
 
+        if not alert_mixed:
+            self.alert_mixed = True
+        else:
+            self.alert_mixed = alert_mixed
+
         self.data = {"domain": self.domain,
                      "checkrate": self.checkrate,
                      "contact_groups": self.contact_group,
@@ -149,6 +161,7 @@ class StatusCakeSSL:
                      "alert_expiry": self.alert_expiry,
                      "alert_reminder": self.alert_reminder,
                      "alert_broken": self.alert_broken,
+                     "alert_mixed": self.alert_mixed,
                      }
 
         self.result = {
@@ -185,6 +198,7 @@ class StatusCakeSSL:
                         "alert_broken": item['alert_broken'],
                         "alert_expiry": item['alert_expiry'],
                         "alert_reminder": item['alert_reminder'],
+                        "alert_mixed": item['alert_mixed'],
                         "contact_groups": item['contact_groups'][0],
                         "domain": item['domain'],
                         "id": item['id']
@@ -264,7 +278,8 @@ def run_module():
         alert_at=dict(type='str', required=False),
         alert_expiry=dict(type='bool', required=False),
         alert_reminder=dict(type='bool', required=False),
-        alert_broken=dict(type='bool', required=False)
+        alert_broken=dict(type='bool', required=False),
+        alert_mixed=dict(type='bool', required=False)
     )
 
     module = AnsibleModule(
@@ -286,6 +301,7 @@ def run_module():
     alert_expiry = module.params['alert_expiry']
     alert_reminder = module.params['alert_reminder']
     alert_broken = module.params['alert_broken']
+    alert_mixed = module.params['alert_mixed']
 
     if not (username and api_key) and \
             os.environ.get('STATUSCAKE_USERNAME') and \
@@ -309,7 +325,8 @@ def run_module():
                          alert_at,
                          alert_expiry,
                          alert_reminder,
-                         alert_broken)
+                         alert_broken,
+                         alert_mixed)
 
     if state == "absent":
         test.delete_test()
