@@ -204,7 +204,7 @@ class StatusCakeSSL:
                 self.check_response(response.json())
         else:
             test_id = req_data['id']
-            diffkeys = ([k for k in self.data if self.data[k] and
+            diffkeys = ([k for k in self.data if k in self.data.keys() and
                         k != "checkrate" and
                         str(self.data[k]) != str(req_data[k])])
             if self.module.check_mode:
