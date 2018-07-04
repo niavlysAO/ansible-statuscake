@@ -124,36 +124,6 @@ class StatusCakeSSL:
         self.alert_broken = alert_broken
         self.alert_mixed = alert_mixed
 
-        if not checkrate:
-            self.checkrate = 3600
-        else:
-            self.checkrate = checkrate
-
-        if not alert_at:
-            self.alert_at = "1,7,30"
-        else:
-            self.alert_at = alert_at
-
-        if not alert_expiry:
-            self.alert_expiry = True
-        else:
-            self.alert_expiry = alert_expiry
-
-        if not alert_reminder:
-            self.alert_reminder = True
-        else:
-            self.alert_reminder = alert_reminder
-
-        if not alert_broken:
-            self.alert_broken = True
-        else:
-            self.alert_broken = alert_broken
-
-        if not alert_mixed:
-            self.alert_mixed = True
-        else:
-            self.alert_mixed = alert_mixed
-
         self.data = {"domain": self.domain,
                      "checkrate": self.checkrate,
                      "contact_groups": self.contact_group,
@@ -234,7 +204,7 @@ class StatusCakeSSL:
                 self.check_response(response.json())
         else:
             test_id = req_data['id']
-            diffkeys = ([k for k in self.data if self.data[k] and
+            diffkeys = ([k for k in self.data if k in self.data.keys() and
                         k != "checkrate" and
                         str(self.data[k]) != str(req_data[k])])
             if self.module.check_mode:
@@ -273,13 +243,13 @@ def run_module():
         api_key=dict(type='str', required=False),
         state=dict(choices=['absent', 'present', 'list'], default='present'),
         domain=dict(type='str', required=False),
-        checkrate=dict(type='int', required=False),
+        checkrate=dict(type='int', required=False, default=3600),
         contact_group=dict(type='int', required=False),
-        alert_at=dict(type='str', required=False),
-        alert_expiry=dict(type='bool', required=False),
-        alert_reminder=dict(type='bool', required=False),
-        alert_broken=dict(type='bool', required=False),
-        alert_mixed=dict(type='bool', required=False)
+        alert_at=dict(type='str', required=False, default="1,7,30"),
+        alert_expiry=dict(type='bool', required=False, default=True),
+        alert_reminder=dict(type='bool', required=False, default=True),
+        alert_broken=dict(type='bool', required=False, default=True),
+        alert_mixed=dict(type='bool', required=False, default=True)
     )
 
     module = AnsibleModule(
