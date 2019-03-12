@@ -84,8 +84,8 @@ options:
     required: false
   confirmation:
     description:
-      - Alert delay rate
-    default: 300
+      - Number of servers to confirm alerts
+    default: 0
     required: false
   timeout:
     description:
@@ -123,12 +123,17 @@ options:
     description:
       - Use to populate the RAW POST data field on the test
     required: false
+  trigger_rate:
+    description:
+      - Alert delay rate
+    default: 5
+    required: false
 '''
 
 EXAMPLES = '''
 ---
 - name: Create statuscake test
-  statuscake:
+  statuscake_uptime:
     username: user
     api_key: api
     name: "MyWebSite"
@@ -149,9 +154,10 @@ EXAMPLES = '''
     find_string: "/html>"
     do_not_find: 0
     post_raw: ""
+    trigger_rate: 0
 
 - name: List all statuscake tests
-  statuscake:
+  statuscake_uptime:
     username: user
     api_key: api
     state: list
@@ -221,7 +227,7 @@ class StatusCakeUptime:
                  test_tags, check_rate, test_type, port, contact_group, paused,
                  node_locations, confirmation, timeout, status_codes, host,
                  custom_header, follow_redirect, find_string, do_not_find,
-                 post_raw):
+                 post_raw,trigger_rate):
 
         self.headers = {"Username": username, "API": api_key}
         self.module = module
@@ -243,6 +249,7 @@ class StatusCakeUptime:
         self.do_not_find = do_not_find
         self.port = port
         self.post_raw = post_raw
+        self.trigger_rate = trigger_rate
 
         if not check_rate:
             self.check_rate = 300
@@ -253,6 +260,10 @@ class StatusCakeUptime:
             self.test_type = "HTTP"
         else:
             self.test_type = test_type
+        if trigger_rate is None:
+            self.trigger_rate = 5
+        else:
+            self.trigger_rate = trigger_rate
 
         self.data = {"WebsiteName": self.name,
                      "WebsiteURL": self.url,
@@ -270,6 +281,7 @@ class StatusCakeUptime:
                      "FindString": self.find_string,
                      "Port": self.port,
                      "DoNotFind": self.do_not_find,
+                     "TriggerRate": self.trigger_rate,
                      }
 
         if self.custom_header:
@@ -418,6 +430,7 @@ def run_module():
         find_string=dict(type='str', required=False),
         do_not_find=dict(type='int', required=False),
         post_raw=dict(type='str', required=False),
+        trigger_rate=dict(type='int', required=False),
     )
 
     module = AnsibleModule(
@@ -451,6 +464,7 @@ def run_module():
     find_string = module.params['find_string']
     do_not_find = module.params['do_not_find']
     post_raw = module.params['post_raw']
+    trigger_rate = module.params['trigger_rate']
 
     if not (username and api_key) and \
             os.environ.get('STATUSCAKE_USERNAME') and \
@@ -485,7 +499,8 @@ def run_module():
                             follow_redirect,
                             find_string,
                             do_not_find,
-                            post_raw)
+                            post_raw,
+                            trigger_rate)
 
     if state == "absent":
         test.delete_test()
