@@ -365,7 +365,7 @@ class StatusCakeUptime:
                                 str(test_id))
             response = requests.get(url_details_test, headers=self.headers)
             req_data = self.convert(response.json())
-            diffkeys = ([k for k in self.data if self.data[k] and
+            diffkeys = ([k for k in self.data if self.data[k] and k in req_data and
                         str(self.data[k]) != str(req_data[k])])
             if self.module.check_mode:
                 if len(diffkeys) != 0:
