@@ -123,6 +123,10 @@ options:
     description:
       - Use to populate the RAW POST data field on the test
     required: false
+  trigger_rate:
+    description:
+      - Alert delay rate
+    default: 5
   basic_user:
     description:
       - A Basic Auth User account to use to login
@@ -157,6 +161,7 @@ EXAMPLES = '''
     find_string: "/html>"
     do_not_find: 0
     post_raw: ""
+    trigger_rate: 0
     basic_user: "my_username"
     basic_pass: "my_password"
 
@@ -231,7 +236,7 @@ class StatusCakeUptime:
                  test_tags, check_rate, test_type, port, contact_group, paused,
                  node_locations, confirmation, timeout, status_codes, host,
                  custom_header, follow_redirect, find_string, do_not_find,
-                 post_raw, basic_user, basic_pass):
+                 post_raw, trigger_rate, basic_user, basic_pass):
 
         self.headers = {"Username": username, "API": api_key}
         self.module = module
@@ -253,6 +258,7 @@ class StatusCakeUptime:
         self.do_not_find = do_not_find
         self.port = port
         self.post_raw = post_raw
+        self.trigger_rate = trigger_rate
         self.basic_user = basic_user
         self.basic_pass = basic_pass
 
@@ -282,6 +288,7 @@ class StatusCakeUptime:
                      "FindString": self.find_string,
                      "Port": self.port,
                      "DoNotFind": self.do_not_find,
+                     "TriggerRate": self.trigger_rate,
                      "BasicUser": self.basic_user,
                      "BasicPass": self.basic_pass,
                      }
@@ -432,6 +439,7 @@ def run_module():
         find_string=dict(type='str', required=False),
         do_not_find=dict(type='int', required=False),
         post_raw=dict(type='str', required=False),
+        trigger_rate=dict(type='int', required=False),
         basic_user=dict(type='str', required=False),
         basic_pass=dict(type='str', required=False),
     )
@@ -467,6 +475,7 @@ def run_module():
     find_string = module.params['find_string']
     do_not_find = module.params['do_not_find']
     post_raw = module.params['post_raw']
+    trigger_rate = module.params['trigger_rate']
     basic_user = module.params['basic_user']
     basic_pass = module.params['basic_pass']
 
@@ -504,6 +513,7 @@ def run_module():
                             find_string,
                             do_not_find,
                             post_raw,
+                            trigger_rate,
                             basic_user,
                             basic_pass)
 
