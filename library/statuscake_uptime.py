@@ -123,6 +123,14 @@ options:
     description:
       - Use to populate the RAW POST data field on the test
     required: false
+  basic_user:
+    description:
+      - A Basic Auth User account to use to login
+    required: false
+  basic_pass:
+    description:
+      - If BasicUser is set then this should be the password for the BasicUser
+    required: false
 '''
 
 EXAMPLES = '''
@@ -149,6 +157,8 @@ EXAMPLES = '''
     find_string: "/html>"
     do_not_find: 0
     post_raw: ""
+    basic_user: "my_username"
+    basic_pass: "my_password"
 
 - name: List all statuscake tests
   statuscake:
@@ -221,7 +231,7 @@ class StatusCakeUptime:
                  test_tags, check_rate, test_type, port, contact_group, paused,
                  node_locations, confirmation, timeout, status_codes, host,
                  custom_header, follow_redirect, find_string, do_not_find,
-                 post_raw):
+                 post_raw, basic_user, basic_pass):
 
         self.headers = {"Username": username, "API": api_key}
         self.module = module
@@ -243,6 +253,8 @@ class StatusCakeUptime:
         self.do_not_find = do_not_find
         self.port = port
         self.post_raw = post_raw
+        self.basic_user = basic_user
+        self.basic_pass = basic_pass
 
         if not check_rate:
             self.check_rate = 300
@@ -270,6 +282,8 @@ class StatusCakeUptime:
                      "FindString": self.find_string,
                      "Port": self.port,
                      "DoNotFind": self.do_not_find,
+                     "BasicUser": self.basic_user,
+                     "BasicPass": self.basic_pass,
                      }
 
         if self.custom_header:
@@ -418,6 +432,8 @@ def run_module():
         find_string=dict(type='str', required=False),
         do_not_find=dict(type='int', required=False),
         post_raw=dict(type='str', required=False),
+        basic_user=dict(type='str', required=False),
+        basic_pass=dict(type='str', required=False),
     )
 
     module = AnsibleModule(
@@ -451,6 +467,8 @@ def run_module():
     find_string = module.params['find_string']
     do_not_find = module.params['do_not_find']
     post_raw = module.params['post_raw']
+    basic_user = module.params['basic_user']
+    basic_pass = module.params['basic_pass']
 
     if not (username and api_key) and \
             os.environ.get('STATUSCAKE_USERNAME') and \
@@ -485,7 +503,9 @@ def run_module():
                             follow_redirect,
                             find_string,
                             do_not_find,
-                            post_raw)
+                            post_raw,
+                            basic_user,
+                            basic_pass)
 
     if state == "absent":
         test.delete_test()
