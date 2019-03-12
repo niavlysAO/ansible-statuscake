@@ -441,7 +441,7 @@ def run_module():
         post_raw=dict(type='str', required=False),
         trigger_rate=dict(type='int', required=False),
         basic_user=dict(type='str', required=False),
-        basic_pass=dict(type='str', required=False),
+        basic_pass=dict(type='str', required=False, no_log=True),
     )
 
     module = AnsibleModule(
