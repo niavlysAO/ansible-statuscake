@@ -84,8 +84,8 @@ options:
     required: false
   confirmation:
     description:
-      - Alert delay rate
-    default: 300
+      - Number of servers to confirm alerts
+    default: 0
     required: false
   timeout:
     description:
@@ -140,7 +140,7 @@ options:
 EXAMPLES = '''
 ---
 - name: Create statuscake test
-  statuscake:
+  statuscake_uptime:
     username: user
     api_key: api
     name: "MyWebSite"
@@ -166,7 +166,7 @@ EXAMPLES = '''
     basic_pass: "my_password"
 
 - name: List all statuscake tests
-  statuscake:
+  statuscake_uptime:
     username: user
     api_key: api
     state: list
@@ -271,6 +271,10 @@ class StatusCakeUptime:
             self.test_type = "HTTP"
         else:
             self.test_type = test_type
+        if trigger_rate is None:
+            self.trigger_rate = 5
+        else:
+            self.trigger_rate = trigger_rate
 
         self.data = {"WebsiteName": self.name,
                      "WebsiteURL": self.url,
